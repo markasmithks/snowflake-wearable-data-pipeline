@@ -1,0 +1,76 @@
+-- 04_data_quality.sql
+-- Rejected readings table and data quality diagnostics.
+-- Rejection processing is implemented in
+-- CURATED.PROCESS_SENSOR_READINGS().
+
+USE DATABASE WEARABLE_DEMO;
+
+-- 1. Create rejected readings table
+
+CREATE TABLE IF NOT EXISTS CURATED.REJECTED_READINGS (
+    READING_ID INTEGER,
+    DEVICE_ID VARCHAR(20),
+    EVENT_TIMESTAMP TIMESTAMP_NTZ,
+    ACTIVITY_COUNT INTEGER,
+    REJECTION_REASON VARCHAR(100),
+    PROCESSED_AT TIMESTAMP_NTZ
+        DEFAULT CURRENT_TIMESTAMP()::TIMESTAMP_NTZ
+);
+
+
+-- 2. Optional test records
+-- Uncomment only when intentionally testing rejection logic.
+
+-- INSERT INTO RAW.SENSOR_READINGS
+--     (DEVICE_ID, EVENT_TIMESTAMP, ACTIVITY_COUNT)
+-- VALUES
+--     ('S500', '2026-10-06 10:00:00', -50),
+--     ('S725', NULL, 150);
+
+
+-- 3. Diagnostic: basic measurement validation
+
+SELECT
+    READING_ID,
+    DEVICE_ID,
+    EVENT_TIMESTAMP,
+    ACTIVITY_COUNT,
+    CASE
+        WHEN EVENT_TIMESTAMP IS NULL
+            THEN 'MISSING_TIMESTAMP'
+        WHEN ACTIVITY_COUNT IS NULL
+             OR ACTIVITY_COUNT < 0
+            THEN 'INVALID_ACTIVITY'
+        ELSE 'VALID_MEASUREMENT'
+    END AS VALIDATION_STATUS
+FROM RAW.SENSOR_READINGS
+ORDER BY READING_ID;
+
+
+-- 4. Diagnostic: missing historical device assignment
+
+SELECT
+    r.READING_ID,
+    r.DEVICE_ID,
+    r.EVENT_TIMESTAMP,
+    r.ACTIVITY_COUNT
+FROM RAW.SENSOR_READINGS r
+LEFT JOIN RAW.DEVICE_ASSIGNMENTS a
+    ON r.DEVICE_ID = a.DEVICE_ID
+    AND r.EVENT_TIMESTAMP >= a.ASSIGNMENT_START
+    AND (
+        r.EVENT_TIMESTAMP < a.ASSIGNMENT_END
+        OR a.ASSIGNMENT_END IS NULL
+    )
+WHERE a.ASSIGNMENT_ID IS NULL;
+
+
+-- 5. Inspect rejected readings
+
+SELECT
+    READING_ID,
+    DEVICE_ID,
+    ACTIVITY_COUNT,
+    REJECTION_REASON
+FROM CURATED.REJECTED_READINGS
+ORDER BY READING_ID;

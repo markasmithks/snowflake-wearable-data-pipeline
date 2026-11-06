@@ -1,0 +1,29 @@
+-- 03_curated_tables.sql
+-- Create the validated sensor readings table.
+
+USE DATABASE WEARABLE_DEMO;
+
+CREATE TABLE IF NOT EXISTS CURATED.SENSOR_READINGS (
+    READING_ID INTEGER,
+    ANIMAL_ID VARCHAR(20),
+    DEVICE_ID VARCHAR(20),
+    EVENT_TIMESTAMP TIMESTAMP_NTZ,
+    ACTIVITY_COUNT INTEGER,
+    PROCESSED_AT TIMESTAMP_NTZ
+        DEFAULT CURRENT_TIMESTAMP()::TIMESTAMP_NTZ
+);
+
+-- =====================================================
+-- DIAGNOSTIC QUERIES
+-- =====================================================
+
+-- Inspect curated readings
+SELECT *
+FROM CURATED.SENSOR_READINGS
+ORDER BY EVENT_TIMESTAMP;
+
+-- Check for duplicate reading IDs
+SELECT
+    COUNT(*) AS TOTAL_READINGS,
+    COUNT(DISTINCT READING_ID) AS UNIQUE_READINGS
+FROM CURATED.SENSOR_READINGS;

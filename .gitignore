@@ -1,0 +1,15 @@
+# Python environment
+.venv/
+__pycache__/
+*.pyc
+
+# Credentials and encryption keys
+.env
+.env.*
+!.env.example
+keys/
+*.p8
+*.pem
+
+# Generated data
+data/*.csv
